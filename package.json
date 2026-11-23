@@ -1,0 +1,29 @@
+{
+  "name": "obscura-view-camera",
+  "version": "0.2.0",
+  "description": "An offline 4×5 view camera and geometric optics workbench",
+  "license": "MIT",
+  "repository": {"type": "git", "url": "https://github.com/AliceMarskov/obscura-view-camera.git"},
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node build.mjs --serve",
+    "build": "tsc --noEmit && node build.mjs",
+    "build:offline": "tsc --noEmit && node build-standalone.mjs",
+    "test": "node --experimental-strip-types --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.180.0",
+    "lucide-react": "^0.468.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.180.0",
+    "typescript": "^5.8.3",
+    "esbuild": "0.28.2",
+    "playwright-core": "^1.55.0"
+  }
+}

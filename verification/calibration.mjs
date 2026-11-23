@@ -1,0 +1,41 @@
+import {chromium} from 'playwright-core'
+import assert from 'node:assert/strict'
+
+const browser=await chromium.launch({channel:'msedge',headless:true})
+try {
+  const page=await browser.newPage({viewport:{width:1200,height:760},deviceScaleFactor:1})
+  const errors=[]
+  page.on('pageerror',error=>errors.push(error.message))
+  page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
+  await page.goto(new URL('/calibration.html',process.env.LFC_PREVIEW_URL||'http://127.0.0.1:5173').href)
+  const read=page.locator('#cal-read')
+  await page.waitForFunction(()=>/1\.08[78] m/.test(document.querySelector('#cal-read')?.textContent))
+  const extension=page.getByRole('slider',{name:'皮腔长度',exact:true})
+  const tilt=page.getByRole('slider',{name:'前组俯仰',exact:true})
+  const image=()=>page.locator('canvas').evaluate(c=>c.toDataURL())
+  const parallel=await image()
+
+  await extension.press('Home')
+  assert.equal(await read.innerText(),'∞')
+  assert.match(await page.locator('#cal-status').innerText(),/无穷远/)
+  await page.getByRole('button',{name:'皮腔长度精调',exact:true}).click()
+  await page.getByRole('button',{name:'增大皮腔长度',exact:true}).click()
+  assert.equal(await extension.getAttribute('aria-valuenow'),'150.01')
+  assert.ok(Number.parseFloat(await read.innerText()) > 2200, 'one hundredth of a mm past infinity should focus beyond 2 km')
+  await extension.press('Home')
+  await tilt.press('End')
+  assert.notEqual(await read.innerText(),'∞')
+  await extension.dblclick()
+  assert.equal(await extension.getAttribute('aria-valuenow'),'174')
+  const angle=page.getByRole('spinbutton',{name:'前组俯仰数值',exact:true})
+  await angle.fill('8');await angle.press('Enter')
+  assert.equal(await tilt.getAttribute('aria-valuenow'),'8')
+  assert.notEqual(await image(),parallel)
+  assert.match(await page.locator('#cal-status').innerText(),/共同交线/)
+  await page.screenshot({path:'verification/01-calibration.png',fullPage:true})
+  await page.setViewportSize({width:390,height:844})
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
+  assert.equal(await page.getByRole('link',{name:'返回取景台',exact:false}).getAttribute('href'),'./')
+  assert.deepEqual(errors,[])
+  console.log('PASS: calibrated distance, parallel/infinite and tilted planes, shared dials, mobile layout and the workbench link.')
+} finally {await browser.close()}
